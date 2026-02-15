@@ -57,7 +57,8 @@ jobs:
       - name: 📋 Log test execution status
         id: check-results
         run: |
-          if [ ${{ steps.test-run.outcome }} == 'failure' ]; then
+          # Check actual test outcome from exit code
+          if [ "${{ steps.test-run.outcome }}" = "failure" ]; then
             echo "TEST_FAILED=true" >> $GITHUB_ENV
             echo "::error::❌ Tests failed on Ubuntu! Activating Healer..."
           else
@@ -135,7 +136,8 @@ jobs:
         if: always()
         run: |
           echo "## 🐧 Ubuntu Test Execution Summary" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.test-run.outcome }}" == "success" ]; then
+          TEST_STATUS="${{ steps.test-run.outcome }}"
+          if [ "${TEST_STATUS}" = "success" ] || [ "${TEST_STATUS}" = "0" ]; then
             echo "- ✅ Status: **PASSED**" >> $GITHUB_STEP_SUMMARY
           else
             echo "- ❌ Status: **FAILED**" >> $GITHUB_STEP_SUMMARY
@@ -189,7 +191,8 @@ jobs:
       - name: 📋 Log test execution status
         id: check-results
         run: |
-          if [ ${{ steps.test-run.outcome }} == 'failure' ]; then
+          # Check actual test outcome from exit code
+          if [ "${{ steps.test-run.outcome }}" = "failure" ]; then
             echo "TEST_FAILED=true" >> $GITHUB_ENV
             echo "::error::❌ Tests failed in Docker! Activating Healer..."
           else
@@ -267,7 +270,8 @@ jobs:
         if: always()
         run: |
           echo "## 🐳 Docker Test Execution Summary" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.test-run.outcome }}" == "success" ]; then
+          TEST_STATUS="${{ steps.test-run.outcome }}"
+          if [ "${TEST_STATUS}" = "success" ] || [ "${TEST_STATUS}" = "0" ]; then
             echo "- ✅ Status: **PASSED**" >> $GITHUB_STEP_SUMMARY
           else
             echo "- ❌ Status: **FAILED**" >> $GITHUB_STEP_SUMMARY
