@@ -69,7 +69,8 @@ export class RevenueNSWStampDutyPage {
     try {
       await this.calculateButton.waitFor({ state: 'visible', timeout: 5000 });
       await this.calculateButton.click();
-      await this.page.waitForLoadState();
+      // Wait for result dialog/modal to appear
+      await this.page.locator('dialog, [class*="modal"]').first().waitFor({ state: 'attached', timeout: 10000 });
     } catch (error) {
       throw new Error(`Failed to click Calculate button: ${error}`);
     }

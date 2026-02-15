@@ -12,3 +12,6 @@ reports/
 .vscode/
 .idea/
 .github/agents/
+allure-results/
+allure-report/
+allure-reports/

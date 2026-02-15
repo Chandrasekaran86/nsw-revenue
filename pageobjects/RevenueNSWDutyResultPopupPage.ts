@@ -14,34 +14,53 @@ export class RevenueNSWDutyResultPopupPage {
   constructor(page: Page) {
     this.page = page;
     
-    // Initialize locators for duty result popup elements using modal classes
-    this.popupContainer = this.page.locator('[class*="modal"]').first();
-    this.resultHeading = this.page.locator('.modal-title, [class*="modal-header"]').first();
-    this.dutyPayableLabel = this.page.locator('.modal-body table td').filter({ hasText: /duty payable/i }).first();
-    this.dutyPayableValue = this.page.locator('.modal-body table td').filter({ hasText: /\$/ }).last();
-    this.closeButton = this.page.locator('.modal-body button:has-text("Close"), [class*="modal"] button:has-text("Close")').first();
+    // Initialize locators for duty result popup elements
+    // Try both dialog element and modal classes for flexibility
+    this.popupContainer = this.page.locator('dialog, [class*="modal"]').first();
+    this.resultHeading = this.page.locator('dialog h4, .modal-title, [class*="modal-header"]').first();
+    this.dutyPayableLabel = this.page.locator('dialog table td, .modal-body table td').filter({ hasText: /duty payable/i }).first();
+    this.dutyPayableValue = this.page.locator('dialog table td, .modal-body table td').filter({ hasText: /\$/ }).last();
+    this.closeButton = this.page.locator('dialog button:has-text("Close"), .modal-body button:has-text("Close"), [class*="modal"] button:has-text("Close")').first();
     this.popupBackdrop = this.page.locator('[class*="backdrop"], [class*="overlay"]').first();
   }
 
   /**
-   * Verify popup is displayed
+   * Verify popup is displayed - checks both dialog element and modal classes
    */
   async isPopupDisplayed(): Promise<boolean> {
     try {
-      // Check if modal exists in DOM
-      const count = await this.page.locator('[class*="modal"]').count();
-      return count > 0;
+      // First try to find dialog element (actual HTML5 dialog)
+      const dialogCount = await this.page.locator('dialog').count();
+      if (dialogCount > 0) {
+        // Wait for dialog to be visible/attached
+        await this.page.locator('dialog').first().waitFor({ state: 'attached', timeout: 3000 });
+        return true;
+      }
+      
+      // Fallback: check for modal classes
+      const modalCount = await this.page.locator('[class*="modal"]').count();
+      if (modalCount > 0) {
+        await this.page.locator('[class*="modal"]').first().waitFor({ state: 'attached', timeout: 3000 });
+        return true;
+      }
+      
+      return false;
     } catch {
       return false;
     }
   }
 
   /**
-   * Verify result heading is loaded
+   * Verify result heading is loaded - checks both dialog and modal
    */
   async isResultHeadingLoaded(): Promise<boolean> {
     try {
-      const headings = await this.page.locator('.modal-title, [class*="modal-header"]').count();
+      // Try dialog h4 first
+      let headings = await this.page.locator('dialog h4').count();
+      if (headings > 0) return true;
+      
+      // Fallback to modal classes
+      headings = await this.page.locator('.modal-title, [class*="modal-header"]').count();
       return headings > 0;
     } catch {
       return false;
@@ -49,11 +68,16 @@ export class RevenueNSWDutyResultPopupPage {
   }
 
   /**
-   * Verify duty payable label is loaded
+   * Verify duty payable label is loaded - checks both dialog and modal
    */
   async isDutyPayableLabelLoaded(): Promise<boolean> {
     try {
-      const labels = await this.page.locator('.modal-body table td').filter({ hasText: /duty payable/i }).count();
+      // Try dialog table first
+      let labels = await this.page.locator('dialog table td').filter({ hasText: /duty payable/i }).count();
+      if (labels > 0) return true;
+      
+      // Fallback to modal classes
+      labels = await this.page.locator('.modal-body table td').filter({ hasText: /duty payable/i }).count();
       return labels > 0;
     } catch {
       return false;
@@ -61,16 +85,27 @@ export class RevenueNSWDutyResultPopupPage {
   }
 
   /**
-   * Get duty payable value text
+   * Get duty payable value text - handles both dialog and modal structures
    */
   async getDutyPayableValue(): Promise<string> {
     try {
-      // Find the row containing "Duty payable" and get the value from the next cell
-      const dutyPayableRow = this.page.locator('.modal-body table tr').filter({ hasText: /Duty payable/ });
-      const valueCell = dutyPayableRow.locator('td').last();
-      const valueText = await valueCell.textContent();
+      // Try finding in dialog table first
+      let dutyPayableRow = this.page.locator('dialog table tr').filter({ hasText: /Duty payable/ });
+      let rowCount = await dutyPayableRow.count();
       
-      return valueText?.trim() || '';
+      // If not in dialog, try modal classes
+      if (rowCount === 0) {
+        dutyPayableRow = this.page.locator('.modal-body table tr').filter({ hasText: /Duty payable/ });
+        rowCount = await dutyPayableRow.count();
+      }
+      
+      if (rowCount > 0) {
+        const valueCell = dutyPayableRow.locator('td').last();
+        const valueText = await valueCell.textContent();
+        return valueText?.trim() || '';
+      }
+      
+      return '';
     } catch (error) {
       throw new Error(`Failed to get duty payable value: ${error}`);
     }
