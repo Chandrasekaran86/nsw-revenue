@@ -1,0 +1,65 @@
+services:
+  playwright-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      no_cache: false
+    image: nsw-revenue-playwright:latest
+    container_name: nsw-revenue-playwright
+    pull_policy: build
+    
+    # Environment variables
+    environment:
+      NODE_ENV: production
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "false"
+    
+    # Persistent volumes for test files and reports
+    volumes:
+      # Test files volume - for persistent storage of tests
+      - ./tests:/app/tests:rw
+      - ./pageobjects:/app/pageobjects:rw
+      - ./fixtures:/app/fixtures:rw
+      
+      # Reports and results volumes - for persistent storage of reports
+      - ./test-results:/app/test-results:rw
+      - ./reports:/app/reports:rw
+      - ./playwright-report:/app/playwright-report:rw
+      
+      # Playwright cache volume - for browser cache persistence
+      - playwright-cache:/app/.playwright
+      - playwright-browsers:/root/.cache/ms-playwright
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    
+    # Restart policy
+    restart: "no"
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "npx", "playwright", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Named volumes for persistence across container restarts
+volumes:
+  playwright-cache:
+    driver: local
+  playwright-browsers:
+    driver: local
