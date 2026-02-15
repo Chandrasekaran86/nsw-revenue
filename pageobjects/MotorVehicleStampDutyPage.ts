@@ -22,6 +22,7 @@ export class MotorVehicleStampDutyPage {
     const checkOnlineButton = this.page.getByRole('button', { name: /Check online/ });
     await checkOnlineButton.waitFor({ state: 'visible' });
     await checkOnlineButton.click();
+    await this.page.waitForLoadState();
   }
 
   /**
